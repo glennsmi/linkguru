@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { initializeApp } from 'firebase/app'
 import { getAuth, User } from 'firebase/auth'
@@ -55,7 +55,12 @@ function App() {
   return (
     <AuthProvider>
       <TenantProvider>
-        <Router>
+        <Router
+          future={{
+            v7_startTransition: true,
+            v7_relativeSplatPath: true
+          }}
+        >
           <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
             <main>
               <Routes>
@@ -63,6 +68,7 @@ function App() {
                 <Route path="/about" element={<AboutPage />} />
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/design" element={<DesignReferencePage />} />
+                <Route path="/dashboard" element={<Navigate to="/app/dashboard" replace />} />
                 <Route path="/app" element={<AppLayout />}>
                   <Route path="dashboard" element={<DashboardPage />} />
                   <Route path="links" element={<LinkManagementPage />} />

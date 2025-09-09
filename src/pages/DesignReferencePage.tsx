@@ -1,15 +1,41 @@
 import { useState, useEffect } from 'react'
-import { Sun, Moon, Palette, Contrast, Eye, CheckCircle } from 'lucide-react'
+import { Sun, Moon, Palette, Contrast, Eye } from 'lucide-react'
 
 export default function DesignReferencePage() {
   const [isDark, setIsDark] = useState<boolean>(() => document.documentElement.classList.contains('dark'))
-  const [selectedColor, setSelectedColor] = useState<string | null>(null)
+  const [copiedColor, setCopiedColor] = useState<string | null>(null)
 
   const toggleTheme = () => {
     const next = !isDark
     setIsDark(next)
-    document.documentElement.classList.toggle('dark', next)
+    
+    // Force remove and add the class to ensure it's applied
+    document.documentElement.classList.remove('dark')
+    if (next) {
+      document.documentElement.classList.add('dark')
+    }
+    
     localStorage.setItem('lg_theme', next ? 'dark' : 'light')
+    
+    // Force a re-render by updating state again
+    setTimeout(() => {
+      setIsDark(next)
+      console.log('Design page theme toggled to:', next ? 'dark' : 'light', 'DOM has dark class:', document.documentElement.classList.contains('dark'))
+    }, 50)
+  }
+
+  const copyToClipboard = async (colorValue: string) => {
+    try {
+      await navigator.clipboard.writeText(colorValue)
+      setCopiedColor(colorValue)
+      
+      // Reset the copied state after 2 seconds
+      setTimeout(() => {
+        setCopiedColor(null)
+      }, 2000)
+    } catch (err) {
+      console.error('Failed to copy color:', err)
+    }
   }
 
   useEffect(() => {
@@ -23,63 +49,33 @@ export default function DesignReferencePage() {
 
   const colorPalettes = {
     primary: {
-      name: 'Primary (Brand)',
+      name: 'Primary (Cyan)',
       colors: [
-        { name: '50', value: '#f0f9ff', text: 'slate-900' },
-        { name: '100', value: '#e0f2fe', text: 'slate-900' },
-        { name: '200', value: '#bae6fd', text: 'slate-900' },
-        { name: '300', value: '#7dd3fc', text: 'slate-900' },
-        { name: '400', value: '#38bdf8', text: 'slate-900' },
-        { name: '500', value: '#0ea5e9', text: 'white' },
-        { name: '600', value: '#0284c7', text: 'white' },
-        { name: '700', value: '#0369a1', text: 'white' },
-        { name: '800', value: '#075985', text: 'white' },
-        { name: '900', value: '#0c4a6e', text: 'white' },
+        { name: '50', value: '#ecfeff', text: 'slate-900' },
+        { name: '100', value: '#cffafe', text: 'slate-900' },
+        { name: '200', value: '#a5f3fc', text: 'slate-900' },
+        { name: '300', value: '#67e8f9', text: 'slate-900' },
+        { name: '400', value: '#22d3ee', text: 'slate-900' },
+        { name: '500', value: '#0891b2', text: 'white' },
+        { name: '600', value: '#0e7490', text: 'white' },
+        { name: '700', value: '#155e75', text: 'white' },
+        { name: '800', value: '#164e63', text: 'white' },
+        { name: '900', value: '#083344', text: 'white' },
       ]
     },
-    success: {
-      name: 'Success (Green)',
+    secondary: {
+      name: 'Secondary (Emerald)',
       colors: [
-        { name: '50', value: '#f0fdf4', text: 'slate-900' },
-        { name: '100', value: '#dcfce7', text: 'slate-900' },
-        { name: '200', value: '#bbf7d0', text: 'slate-900' },
-        { name: '300', value: '#86efac', text: 'slate-900' },
-        { name: '400', value: '#4ade80', text: 'slate-900' },
-        { name: '500', value: '#22c55e', text: 'white' },
-        { name: '600', value: '#16a34a', text: 'white' },
-        { name: '700', value: '#15803d', text: 'white' },
-        { name: '800', value: '#166534', text: 'white' },
-        { name: '900', value: '#14532d', text: 'white' },
-      ]
-    },
-    warning: {
-      name: 'Warning (Amber)',
-      colors: [
-        { name: '50', value: '#fffbeb', text: 'slate-900' },
-        { name: '100', value: '#fef3c7', text: 'slate-900' },
-        { name: '200', value: '#fde68a', text: 'slate-900' },
-        { name: '300', value: '#fcd34d', text: 'slate-900' },
-        { name: '400', value: '#fbbf24', text: 'slate-900' },
-        { name: '500', value: '#f59e0b', text: 'white' },
-        { name: '600', value: '#d97706', text: 'white' },
-        { name: '700', value: '#b45309', text: 'white' },
-        { name: '800', value: '#92400e', text: 'white' },
-        { name: '900', value: '#78350f', text: 'white' },
-      ]
-    },
-    error: {
-      name: 'Error (Red)',
-      colors: [
-        { name: '50', value: '#fef2f2', text: 'slate-900' },
-        { name: '100', value: '#fee2e2', text: 'slate-900' },
-        { name: '200', value: '#fecaca', text: 'slate-900' },
-        { name: '300', value: '#fca5a5', text: 'slate-900' },
-        { name: '400', value: '#f87171', text: 'slate-900' },
-        { name: '500', value: '#ef4444', text: 'white' },
-        { name: '600', value: '#dc2626', text: 'white' },
-        { name: '700', value: '#b91c1c', text: 'white' },
-        { name: '800', value: '#991b1b', text: 'white' },
-        { name: '900', value: '#7f1d1d', text: 'white' },
+        { name: '50', value: '#ecfdf5', text: 'slate-900' },
+        { name: '100', value: '#d1fae5', text: 'slate-900' },
+        { name: '200', value: '#a7f3d0', text: 'slate-900' },
+        { name: '300', value: '#6ee7b7', text: 'slate-900' },
+        { name: '400', value: '#34d399', text: 'slate-900' },
+        { name: '500', value: '#10b981', text: 'white' },
+        { name: '600', value: '#059669', text: 'white' },
+        { name: '700', value: '#047857', text: 'white' },
+        { name: '800', value: '#065f46', text: 'white' },
+        { name: '900', value: '#064e3b', text: 'white' },
       ]
     },
     neutral: {
@@ -96,7 +92,7 @@ export default function DesignReferencePage() {
         { name: '800', value: '#1e293b', text: 'white' },
         { name: '900', value: '#0f172a', text: 'white' },
       ]
-    }
+    },
   }
 
   const sidebarColors = {
@@ -105,38 +101,45 @@ export default function DesignReferencePage() {
       border: 'border-slate-200',
       textPrimary: 'text-slate-800',
       textSecondary: 'text-slate-600',
-      hoverBg: 'hover:bg-primary-50',
-      hoverText: 'hover:text-primary-700',
-      active: 'bg-primary-100 text-primary-700'
+      hoverBg: 'hover:bg-cyan-50',
+      hoverText: 'hover:text-cyan-700',
+      active: 'text-white',
+      primary: '#0891b2',
+      secondary: '#10b981'
     },
     dark: {
       background: 'bg-slate-900',
       border: 'border-slate-700',
       textPrimary: 'text-slate-100',
       textSecondary: 'text-slate-300',
-      hoverBg: 'hover:bg-primary-900/30',
-      hoverText: 'hover:text-primary-200',
-      active: 'bg-primary-900 text-primary-200'
+      hoverBg: 'hover:bg-slate-800',
+      hoverText: 'hover:text-white',
+      active: 'text-white',
+      primary: '#0891b2',
+      secondary: '#10b981'
     }
   }
 
   const currentSidebarColors = isDark ? sidebarColors.dark : sidebarColors.light
 
   return (
-    <div className={`min-h-screen transition-colors duration-200 ${isDark ? 'dark bg-gradient-to-br from-slate-900 via-slate-900 to-primary-900/20' : 'bg-gradient-to-br from-primary-50 via-slate-50 to-primary-100/30'}`}>
+    <div 
+      key={`design-page-${isDark ? 'dark' : 'light'}`}
+      className={`min-h-screen transition-colors duration-200 ${isDark ? 'bg-gradient-to-br from-slate-900 via-slate-900 to-primary-900/20' : 'bg-gradient-to-br from-primary-50 via-slate-50 to-primary-100/30'}`}
+    >
       {/* Header */}
-      <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 py-4">
+      <div className={`sticky top-0 z-50 ${isDark ? 'bg-slate-800' : 'bg-white'} border-b ${isDark ? 'border-slate-700' : 'border-slate-200'} px-6 py-4 shadow-sm`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Palette className="w-8 h-8 text-primary-600" />
             <div>
-              <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Design Reference</h1>
-              <p className="text-slate-600 dark:text-slate-400">Color system and component examples</p>
+              <h1 className={`text-2xl font-bold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>Design Reference</h1>
+              <p className={`${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Color system and component examples</p>
             </div>
           </div>
           <button
             onClick={toggleTheme}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 transition-colors"
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg group ${isDark ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'} transition-colors`}
           >
             {isDark ? <Sun size={20} /> : <Moon size={20} />}
             {isDark ? 'Light Mode' : 'Dark Mode'}
@@ -146,39 +149,39 @@ export default function DesignReferencePage() {
 
       <div className="p-6 space-y-8">
         {/* Sidebar Preview */}
-        <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-6">
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
+        <div className={`${isDark ? 'bg-slate-800' : 'bg-white'} rounded-lg border ${isDark ? 'border-slate-700' : 'border-slate-200'} p-6`}>
+          <h2 className={`text-xl font-semibold ${isDark ? 'text-slate-100' : 'text-slate-900'} mb-4 flex items-center gap-2`}>
             <Contrast className="w-5 h-5 text-primary-600" />
             Sidebar Color Scheme
           </h2>
-          <div className="mb-4 p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg border border-primary-200 dark:border-primary-800">
-            <p className="text-sm text-primary-700 dark:text-primary-300">
+          <div className={`mb-4 p-3 ${isDark ? 'bg-primary-900/20' : 'bg-primary-50'} rounded-lg border ${isDark ? 'border-primary-800' : 'border-primary-200'}`}>
+            <p className={`text-sm ${isDark ? 'text-primary-300' : 'text-primary-700'}`}>
               <strong>Primary Brand Color:</strong> This design system uses primary-500 (#3b82f6) as the main brand color for interactive elements, active states, and accents.
             </p>
           </div>
           <div className="flex gap-6">
             <div className={`w-64 h-96 rounded-lg border ${currentSidebarColors.border} ${currentSidebarColors.background} p-4`}>
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#0891b2' }}>
                   <span className="text-white font-bold text-sm">LG</span>
                 </div>
                 <span className={`font-semibold ${currentSidebarColors.textPrimary}`}>Link Guru</span>
               </div>
               
               <nav className="space-y-1">
-                <div className={`flex items-center gap-3 px-3 py-2 rounded-md ${currentSidebarColors.active}`}>
-                  <div className="w-5 h-5 bg-current" />
-                  <span className="text-sm font-medium">Dashboard</span>
+                <div className="flex items-center gap-3 px-3 py-2 rounded-md text-white" style={{ backgroundColor: '#0891b2' }}>
+                  <div className="w-5 h-5 bg-white rounded" />
+                  <span className="text-sm font-medium text-white">Dashboard</span>
                 </div>
-                <div className={`flex items-center gap-3 px-3 py-2 rounded-md ${currentSidebarColors.textSecondary} ${currentSidebarColors.hoverBg} ${currentSidebarColors.hoverText}`}>
+                <div className={`flex items-center gap-3 px-3 py-2 rounded-md ${isDark ? 'text-slate-300 hover:text-white hover:bg-slate-800' : 'text-slate-700 hover:text-slate-900 hover:bg-cyan-50'}`}>
                   <div className="w-5 h-5 bg-current" />
                   <span className="text-sm">Links</span>
                 </div>
-                <div className={`flex items-center gap-3 px-3 py-2 rounded-md ${currentSidebarColors.textSecondary} ${currentSidebarColors.hoverBg} ${currentSidebarColors.hoverText}`}>
+                <div className={`flex items-center gap-3 px-3 py-2 rounded-md ${isDark ? 'text-slate-300 hover:text-white hover:bg-slate-800' : 'text-slate-700 hover:text-slate-900 hover:bg-cyan-50'}`}>
                   <div className="w-5 h-5 bg-current" />
                   <span className="text-sm">Analytics</span>
                 </div>
-                <div className={`flex items-center gap-3 px-3 py-2 rounded-md ${currentSidebarColors.textSecondary} ${currentSidebarColors.hoverBg} ${currentSidebarColors.hoverText}`}>
+                <div className={`flex items-center gap-3 px-3 py-2 rounded-md ${isDark ? 'text-slate-300 hover:text-white hover:bg-slate-800' : 'text-slate-700 hover:text-slate-900 hover:bg-cyan-50'}`}>
                   <div className="w-5 h-5 bg-current" />
                   <span className="text-sm">Settings</span>
                 </div>
@@ -190,8 +193,8 @@ export default function DesignReferencePage() {
                     <span className="text-slate-600 dark:text-slate-300 text-sm">GS</span>
                   </div>
                   <div>
-                    <p className={`text-sm font-medium ${currentSidebarColors.textPrimary}`}>Glenn Smith</p>
-                    <p className={`text-xs ${currentSidebarColors.textSecondary}`}>Profile</p>
+                    <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>Glenn Smith</p>
+                    <p className={`text-xs ${isDark ? 'text-emerald-300' : 'text-emerald-600'}`}>Profile</p>
                   </div>
                 </div>
                 <div className="flex gap-2 mt-2">
@@ -208,26 +211,34 @@ export default function DesignReferencePage() {
             </div>
             
             <div className="flex-1">
-              <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100 mb-3">Current Theme Colors</h3>
+              <h3 className={`text-lg font-medium ${isDark ? 'text-slate-100' : 'text-slate-900'} mb-3`}>Current Theme Colors</h3>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <div className={`p-3 rounded-lg ${currentSidebarColors.background} border ${currentSidebarColors.border}`}>
-                    <p className={`text-sm font-medium ${currentSidebarColors.textPrimary}`}>Background</p>
-                    <p className={`text-xs ${currentSidebarColors.textSecondary}`}>Sidebar background</p>
+                  <div className={`p-3 rounded-lg ${isDark ? 'bg-slate-900' : 'bg-white'} border ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
+                    <p className={`text-sm font-medium ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>Background</p>
+                    <p className={`text-xs ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>Sidebar background</p>
                   </div>
-                  <div className={`p-3 rounded-lg ${currentSidebarColors.active}`}>
-                    <p className="text-sm font-medium text-primary-700 dark:text-primary-200">Active State</p>
-                    <p className="text-xs text-primary-600 dark:text-primary-300">Selected menu item</p>
+                  <div className="p-3 rounded-lg text-white" style={{ backgroundColor: '#0891b2' }}>
+                    <p className="text-sm font-medium text-white">Active State</p>
+                    <p className="text-xs text-white/80">Selected menu item</p>
+                  </div>
+                  <div className="p-3 rounded-lg text-white" style={{ backgroundColor: '#0891b2' }}>
+                    <p className="text-sm font-medium text-white">Brand Logo</p>
+                    <p className="text-xs text-white/80">LG logo background</p>
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <div className={`p-3 rounded-lg border ${currentSidebarColors.border} bg-white dark:bg-slate-800`}>
-                    <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Text Primary</p>
-                    <p className="text-xs text-slate-600 dark:text-slate-400">Main text content</p>
+                  <div className={`p-3 rounded-lg border ${isDark ? 'border-slate-700' : 'border-slate-200'} ${isDark ? 'bg-slate-800' : 'bg-white'}`}>
+                    <p className={`text-sm font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Text Primary</p>
+                    <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Main text content</p>
                   </div>
-                  <div className={`p-3 rounded-lg ${currentSidebarColors.hoverBg} bg-white dark:bg-slate-800`}> 
-                    <p className={`text-sm font-medium ${currentSidebarColors.textPrimary} ${currentSidebarColors.hoverText}`}>Hover State</p>
-                    <p className={`text-xs ${currentSidebarColors.textSecondary} ${currentSidebarColors.hoverText}`}>Interactive elements</p>
+                  <button className={`p-3 rounded-lg w-full text-left transition-all duration-200 ${isDark ? 'bg-slate-800 hover:bg-slate-700' : 'bg-cyan-50 hover:bg-cyan-100'}`}> 
+                    <p className={`text-sm font-medium ${isDark ? 'text-slate-300 hover:text-white' : 'text-slate-700 hover:text-cyan-700'}`}>Hover State</p>
+                    <p className={`text-xs ${isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-600 hover:text-cyan-600'}`}>Interactive elements</p>
+                  </button>
+                  <div className={`p-3 rounded-lg border ${isDark ? 'border-slate-700' : 'border-slate-200'} ${isDark ? 'bg-slate-800' : 'bg-white'}`}>
+                    <p className={`text-sm font-medium ${isDark ? 'text-emerald-300' : 'text-emerald-600'}`}>Profile Link</p>
+                    <p className={`text-xs ${isDark ? 'text-emerald-400' : 'text-emerald-500'}`}>Secondary accent color</p>
                   </div>
                 </div>
               </div>
@@ -237,29 +248,29 @@ export default function DesignReferencePage() {
 
         {/* Color Palettes */}
         <div className="space-y-6">
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+          <h2 className={`text-xl font-semibold ${isDark ? 'text-slate-100' : 'text-slate-900'} flex items-center gap-2`}>
             <Palette className="w-5 h-5 text-primary-600" />
             Color Palettes
           </h2>
-          <div className="p-4 bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-lg border border-primary-200 dark:border-primary-700">
-            <h3 className="text-lg font-semibold text-primary-800 dark:text-primary-200 mb-2">Primary Brand Colors</h3>
-            <p className="text-primary-700 dark:text-primary-300 text-sm">
+          <div className={`p-4 ${isDark ? 'bg-gradient-to-r from-primary-900/20 to-primary-800/20' : 'bg-gradient-to-r from-primary-50 to-primary-100'} rounded-lg border ${isDark ? 'border-primary-700' : 'border-primary-200'}`}>
+            <h3 className={`text-lg font-semibold ${isDark ? 'text-primary-200' : 'text-primary-800'} mb-2`}>Primary Brand Colors</h3>
+            <p className={`${isDark ? 'text-primary-300' : 'text-primary-700'} text-sm`}>
               The primary color palette is the foundation of our brand identity. Use primary-500 (#3b82f6) for main actions, 
               primary-600 for hover states, and lighter shades for backgrounds and accents.
             </p>
           </div>
           
           {Object.entries(colorPalettes).map(([key, palette]) => (
-            <div key={key} className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-6">
-              <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100 mb-4">{palette.name}</h3>
+            <div key={key} className={`${isDark ? 'bg-slate-800' : 'bg-white'} rounded-lg border ${isDark ? 'border-slate-700' : 'border-slate-200'} p-6`}>
+              <h3 className={`text-lg font-medium ${isDark ? 'text-slate-100' : 'text-slate-900'} mb-4`}>{palette.name}</h3>
               <div className="grid grid-cols-10 gap-2">
                 {palette.colors.map((color) => (
                   <div
                     key={color.name}
-                    className={`relative group cursor-pointer rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 ${
-                      selectedColor === `${key}-${color.name}` ? 'ring-2 ring-primary-500' : ''
+                    className={`relative group cursor-pointer rounded-lg overflow-hidden border transition-all duration-200 ${isDark ? 'border-slate-700 hover:border-slate-600' : 'border-slate-200 hover:border-slate-300'} ${
+                      copiedColor === color.value ? 'ring-2 ring-green-500' : ''
                     }`}
-                    onClick={() => setSelectedColor(`${key}-${color.name}`)}
+                    onClick={() => copyToClipboard(color.value)}
                   >
                     <div
                       className="h-16 w-full flex items-center justify-center"
@@ -273,12 +284,14 @@ export default function DesignReferencePage() {
                         {color.name}
                       </span>
                     </div>
-                    <div className="p-2 bg-white dark:bg-slate-800">
-                      <p className="text-xs font-mono text-slate-700 dark:text-slate-300">{color.value}</p>
+                    <div className={`p-2 transition-colors ${isDark ? 'bg-slate-800 group-hover:bg-slate-700' : 'bg-white group-hover:bg-slate-50'}`}>
+                      <p className={`text-xs font-mono transition-colors ${isDark ? 'text-slate-300 group-hover:text-slate-200' : 'text-slate-700 group-hover:text-slate-900'}`}>{color.value}</p>
                     </div>
-                    {selectedColor === `${key}-${color.name}` && (
-                      <div className="absolute inset-0 bg-primary-500/20 flex items-center justify-center">
-                        <CheckCircle className="w-6 h-6 text-primary-600" />
+                    {copiedColor === color.value && (
+                      <div className="absolute inset-0 bg-green-500/20 flex items-center justify-center animate-pulse">
+                        <div className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-medium shadow-lg">
+                          Copied!
+                        </div>
                       </div>
                     )}
                   </div>
@@ -288,14 +301,69 @@ export default function DesignReferencePage() {
           ))}
         </div>
 
+        {/* Logo Assets */}
+        <div className={`${isDark ? 'bg-slate-800' : 'bg-white'} rounded-lg border ${isDark ? 'border-slate-700' : 'border-slate-200'} p-6`}>
+          <h2 className={`text-xl font-semibold ${isDark ? 'text-slate-100' : 'text-slate-900'} mb-4 flex items-center gap-2`}>
+            <div className="w-5 h-5 bg-gradient-to-r from-cyan-500 to-emerald-500 rounded" />
+            Logo Assets
+          </h2>
+          <div className={`mb-6 p-4 ${isDark ? 'bg-slate-700/50' : 'bg-slate-50'} rounded-lg`}>
+            <p className={`text-sm ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+              <strong>Brand Identity:</strong> The infinity ribbon logo represents endless possibilities and continuous growth in link management.
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* SVG Logo */}
+            <div className="space-y-3">
+              <h3 className={`text-sm font-medium ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>SVG Logo (Vector)</h3>
+              <div className={`p-4 ${isDark ? 'bg-slate-900' : 'bg-white'} rounded-lg border ${isDark ? 'border-slate-600' : 'border-slate-200'} flex items-center justify-center`}>
+                <img 
+                  src="/images/Infinite ribbon.svg" 
+                  alt="Link Guru Logo SVG" 
+                  className="h-16 w-auto"
+                />
+              </div>
+              <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                Scalable vector format - use for web, print, and high-resolution displays
+              </p>
+            </div>
+
+            {/* PNG Logo */}
+            <div className="space-y-3">
+              <h3 className={`text-sm font-medium ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>PNG Logo (Raster)</h3>
+              <div className={`p-4 ${isDark ? 'bg-slate-900' : 'bg-white'} rounded-lg border ${isDark ? 'border-slate-600' : 'border-slate-200'} flex items-center justify-center`}>
+                <img 
+                  src="/images/Infinite ribbon.png" 
+                  alt="Link Guru Logo PNG" 
+                  className="h-16 w-auto"
+                />
+              </div>
+              <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                High-resolution raster format - use for social media and web applications
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-6 p-4 bg-gradient-to-r from-cyan-50 to-emerald-50 dark:from-cyan-900/20 dark:to-emerald-900/20 rounded-lg border border-cyan-200 dark:border-cyan-700">
+            <h4 className={`text-sm font-medium ${isDark ? 'text-slate-200' : 'text-slate-800'} mb-2`}>Usage Guidelines</h4>
+            <ul className={`text-xs space-y-1 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+              <li>• Use SVG for scalable applications (web, print)</li>
+              <li>• Use PNG for fixed-size applications (social media, favicons)</li>
+              <li>• Maintain minimum clear space around the logo</li>
+              <li>• Logo should be clearly visible against both light and dark backgrounds</li>
+            </ul>
+          </div>
+        </div>
+
         {/* Component Examples */}
-        <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-6">
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
+        <div className={`${isDark ? 'bg-slate-800' : 'bg-white'} rounded-lg border ${isDark ? 'border-slate-700' : 'border-slate-200'} p-6`}>
+          <h2 className={`text-xl font-semibold ${isDark ? 'text-slate-100' : 'text-slate-900'} mb-4 flex items-center gap-2`}>
             <Eye className="w-5 h-5 text-primary-600" />
             Component Examples
           </h2>
-          <div className="mb-6 p-4 bg-primary-50 dark:bg-primary-900/20 rounded-lg border border-primary-200 dark:border-primary-700">
-            <p className="text-sm text-primary-700 dark:text-primary-300">
+          <div className={`mb-6 p-4 ${isDark ? 'bg-primary-900/20' : 'bg-primary-50'} rounded-lg border ${isDark ? 'border-primary-700' : 'border-primary-200'}`}>
+            <p className={`text-sm ${isDark ? 'text-primary-300' : 'text-primary-700'}`}>
               <strong>Component Color Usage:</strong> All interactive components use the primary brand color system for consistency and clear visual hierarchy.
             </p>
           </div>
@@ -303,51 +371,59 @@ export default function DesignReferencePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {/* Buttons */}
             <div className="space-y-3">
-              <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200">Buttons</h3>
+              <h3 className={`text-sm font-medium ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>Buttons</h3>
               <div className="space-y-2">
                 <button 
                   onClick={(e) => e.preventDefault()}
-                  className="w-full px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
+                  className="w-full px-4 py-2 text-white rounded-lg transition-colors hover:opacity-90"
+                  style={{ backgroundColor: '#0891b2' }}
                 >
                   Primary Button
                 </button>
                 <button 
                   onClick={(e) => e.preventDefault()}
-                  className="w-full px-4 py-2 bg-primary-100 hover:bg-primary-200 dark:bg-primary-900 dark:hover:bg-primary-800 text-primary-700 dark:text-primary-200 rounded-lg transition-colors"
+                  className="w-full px-4 py-2 text-white rounded-lg transition-colors hover:opacity-90"
+                  style={{ backgroundColor: '#10b981' }}
                 >
                   Secondary Button
                 </button>
                 <button 
                   onClick={(e) => e.preventDefault()}
-                  className="w-full px-4 py-2 bg-error-600 hover:bg-error-700 text-white rounded-lg transition-colors"
+                  className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
                 >
                   Danger Button
+                </button>
+                <button 
+                  onClick={(e) => e.preventDefault()}
+                  className={`w-full px-4 py-2 rounded-lg transition-colors ${isDark ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                >
+                  Neutral Button
                 </button>
               </div>
             </div>
 
             {/* Cards */}
             <div className="space-y-3">
-              <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200">Cards</h3>
-              <div className="p-4 bg-slate-50 dark:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-600">
-                <h4 className="font-medium text-slate-900 dark:text-slate-100">Card Title</h4>
-                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Card description with some content.</p>
+              <h3 className={`text-sm font-medium ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>Cards</h3>
+              <div className={`p-4 ${isDark ? 'bg-slate-700' : 'bg-slate-50'} rounded-lg border ${isDark ? 'border-slate-600' : 'border-slate-200'}`}>
+                <h4 className={`font-medium ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>Card Title</h4>
+                <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-600'} mt-1`}>Card description with some content.</p>
               </div>
             </div>
 
             {/* Form Elements */}
             <div className="space-y-3">
-              <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200">Form Elements</h3>
+              <h3 className={`text-sm font-medium ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>Form Elements</h3>
               <div className="space-y-2">
                 <input
                   type="text"
                   placeholder="Input field"
                   readOnly
-                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent cursor-default"
+                  className={`w-full px-3 py-2 border ${isDark ? 'border-slate-600' : 'border-slate-300'} rounded-lg ${isDark ? 'bg-slate-800 text-slate-100 placeholder-slate-400' : 'bg-white text-slate-900 placeholder-slate-500'} focus:ring-2 focus:ring-primary-500 focus:border-transparent cursor-default`}
                 />
                 <select 
                   disabled
-                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-primary-500 focus:border-transparent cursor-default"
+                  className={`w-full px-3 py-2 border ${isDark ? 'border-slate-600' : 'border-slate-300'} rounded-lg ${isDark ? 'bg-slate-800 text-slate-100' : 'bg-white text-slate-900'} focus:ring-2 focus:ring-primary-500 focus:border-transparent cursor-default`}
                 >
                   <option>Select option</option>
                   <option>Option 1</option>
@@ -358,63 +434,65 @@ export default function DesignReferencePage() {
 
             {/* Status Indicators */}
             <div className="space-y-3">
-              <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200">Status Indicators</h3>
+              <h3 className={`text-sm font-medium ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>Status Indicators</h3>
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-success-500 rounded-full"></div>
-                  <span className="text-sm text-success-700 dark:text-success-300">Success</span>
+                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                  <span className={`text-sm ${isDark ? 'text-green-300' : 'text-green-700'}`}>Success</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-warning-500 rounded-full"></div>
-                  <span className="text-sm text-warning-700 dark:text-warning-300">Warning</span>
+                  <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                  <span className={`text-sm ${isDark ? 'text-yellow-300' : 'text-yellow-700'}`}>Warning</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-error-500 rounded-full"></div>
-                  <span className="text-sm text-error-700 dark:text-error-300">Error</span>
+                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                  <span className={`text-sm ${isDark ? 'text-red-300' : 'text-red-700'}`}>Error</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#0891b2' }}></div>
+                  <span className={`text-sm ${isDark ? 'text-cyan-300' : 'text-cyan-700'}`}>Primary</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#10b981' }}></div>
+                  <span className={`text-sm ${isDark ? 'text-emerald-300' : 'text-emerald-700'}`}>Secondary</span>
                 </div>
               </div>
             </div>
 
             {/* Badges */}
             <div className="space-y-3">
-              <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200">Badges</h3>
+              <h3 className={`text-sm font-medium ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>Badges</h3>
               <div className="flex flex-wrap gap-2">
-                <span className="px-2 py-1 bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-200 text-xs rounded-full">
+                <span className="px-2 py-1 text-white text-xs rounded-full" style={{ backgroundColor: '#0891b2' }}>
                   Primary
                 </span>
-                <span className="px-2 py-1 bg-success-100 text-success-700 dark:bg-success-900 dark:text-success-200 text-xs rounded-full">
-                  Success
+                <span className="px-2 py-1 text-white text-xs rounded-full" style={{ backgroundColor: '#10b981' }}>
+                  Secondary
                 </span>
-                <span className="px-2 py-1 bg-warning-100 text-warning-700 dark:bg-warning-900 dark:text-warning-200 text-xs rounded-full">
-                  Warning
-                </span>
-                <span className="px-2 py-1 bg-error-100 text-error-700 dark:bg-error-900 dark:text-error-200 text-xs rounded-full">
-                  Error
-                </span>
-                <span className="px-2 py-1 bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300 text-xs rounded-full">
+                <span className={`px-2 py-1 ${isDark ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-700'} text-xs rounded-full`}>
                   Neutral
                 </span>
-                <span className="px-2 py-1 bg-primary-500 text-white text-xs rounded-full">
-                  Solid
+                <span className="px-2 py-1 bg-amber-500 text-white text-xs rounded-full">
+                  Warning
                 </span>
               </div>
             </div>
 
             {/* Alerts */}
             <div className="space-y-3">
-              <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200">Alerts</h3>
+              <h3 className={`text-sm font-medium ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>Alerts</h3>
               <div className="space-y-2">
-                <div className="p-3 bg-success-50 dark:bg-success-900/20 border border-success-200 dark:border-success-800 rounded-lg">
-                  <p className="text-sm text-success-700 dark:text-success-300">Success message</p>
+                <div className={`p-3 ${isDark ? 'bg-cyan-900/20' : 'bg-cyan-50'} border ${isDark ? 'border-cyan-800' : 'border-cyan-200'} rounded-lg`}>
+                  <p className={`text-sm ${isDark ? 'text-cyan-300' : 'text-cyan-700'}`}>Primary message</p>
                 </div>
-                <div className="p-3 bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-800 rounded-lg">
-                  <p className="text-sm text-warning-700 dark:text-warning-300">Warning message</p>
+                <div className={`p-3 ${isDark ? 'bg-emerald-900/20' : 'bg-emerald-50'} border ${isDark ? 'border-emerald-800' : 'border-emerald-200'} rounded-lg`}>
+                  <p className={`text-sm ${isDark ? 'text-emerald-300' : 'text-emerald-700'}`}>Secondary message</p>
                 </div>
-                <div className="p-3 bg-error-50 dark:bg-error-900/20 border border-error-200 dark:border-error-800 rounded-lg">
-                  <p className="text-sm text-error-700 dark:text-error-300">Error message</p>
+                <div className={`p-3 ${isDark ? 'bg-amber-900/20' : 'bg-amber-50'} border ${isDark ? 'border-amber-800' : 'border-amber-200'} rounded-lg`}>
+                  <p className={`text-sm ${isDark ? 'text-amber-300' : 'text-amber-700'}`}>Warning message</p>
                 </div>
-                <div className="p-3 bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg">
-                  <p className="text-sm text-primary-700 dark:text-primary-300">Info message</p>
+                <div className={`p-3 ${isDark ? 'bg-slate-700/50' : 'bg-slate-100'} border ${isDark ? 'border-slate-600' : 'border-slate-300'} rounded-lg`}>
+                  <p className={`text-sm ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>Neutral message</p>
                 </div>
               </div>
             </div>
@@ -422,20 +500,20 @@ export default function DesignReferencePage() {
         </div>
 
         {/* Accessibility Info */}
-        <div className="bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-6">
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-4">Accessibility Standards</h2>
+        <div className={`${isDark ? 'bg-slate-800' : 'bg-slate-50'} rounded-lg border ${isDark ? 'border-slate-700' : 'border-slate-200'} p-6`}>
+          <h2 className={`text-xl font-semibold ${isDark ? 'text-slate-100' : 'text-slate-900'} mb-4`}>Accessibility Standards</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">Contrast Ratios</h3>
-              <ul className="space-y-1 text-sm text-slate-700 dark:text-slate-300">
+              <h3 className={`text-lg font-medium ${isDark ? 'text-slate-100' : 'text-slate-900'} mb-2`}>Contrast Ratios</h3>
+              <ul className={`space-y-1 text-sm ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                 <li>• AA Standard: 4.5:1 for normal text</li>
                 <li>• AAA Standard: 7:1 for normal text</li>
                 <li>• Large text: 3:1 (AA) / 4.5:1 (AAA)</li>
               </ul>
             </div>
             <div>
-              <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">Tested Combinations</h3>
-              <ul className="space-y-1 text-sm text-slate-700 dark:text-slate-300">
+              <h3 className={`text-lg font-medium ${isDark ? 'text-slate-100' : 'text-slate-900'} mb-2`}>Tested Combinations</h3>
+              <ul className={`space-y-1 text-sm ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                 <li>• Primary 600 on White: 4.8:1 ✓</li>
                 <li>• Slate 700 on White: 4.6:1 ✓</li>
                 <li>• Slate 200 on Slate 900: 4.7:1 ✓</li>

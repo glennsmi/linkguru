@@ -13,7 +13,7 @@ export default function AboutPage() {
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
           <div className="bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold text-primary-700 mb-3">Frontend Stack</h3>
+            <h3 className="text-lg font-semibold mb-3" style={{ color: '#0891b2' }}>Frontend Stack</h3>
             <ul className="space-y-2 text-gray-600">
               <li>• React 18 with TypeScript</li>
               <li>• Vite for fast development</li>
@@ -24,7 +24,7 @@ export default function AboutPage() {
           </div>
 
           <div className="bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold text-primary-700 mb-3">Backend Stack</h3>
+            <h3 className="text-lg font-semibold mb-3" style={{ color: '#0891b2' }}>Backend Stack</h3>
             <ul className="space-y-2 text-gray-600">
               <li>• Firebase Functions v2</li>
               <li>• TypeScript for type safety</li>
@@ -57,7 +57,7 @@ export default function AboutPage() {
         </div>
 
         <h2 className="text-2xl font-bold text-gray-900 mb-4">Getting Started</h2>
-        <div className="bg-primary-50 p-6 rounded-lg">
+        <div className="p-6 rounded-lg" style={{ backgroundColor: '#ecfeff' }}>
           <ol className="list-decimal list-inside space-y-2 text-gray-700">
             <li>Install dependencies: <code className="bg-gray-200 px-2 py-1 rounded">npm run install:all</code></li>
             <li>Configure Firebase in <code className="bg-gray-200 px-2 py-1 rounded">src/config/firebase.ts</code></li>
