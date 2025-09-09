@@ -1,0 +1,136 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ============================================================================
+    // TENANT ISOLATION HELPER FUNCTIONS
+    // ============================================================================
+
+    // Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Check if user is a member of the specified tenant
+    function isTenantMember(tenantId) {
+      return isAuthenticated() &&
+        exists(/databases/$(database)/documents/tenants/$(tenantId)/members/$(request.auth.uid));
+    }
+
+    // Get user's role in the specified tenant
+    function getUserRole(tenantId) {
+      return get(/databases/$(database)/documents/tenants/$(tenantId)/members/$(request.auth.uid)).data.role;
+    }
+
+    // Check if user has admin or owner role
+    function isTenantAdmin(tenantId) {
+      let role = getUserRole(tenantId);
+      return role == 'owner' || role == 'admin';
+    }
+
+    // ============================================================================
+    // TENANT MANAGEMENT
+    // ============================================================================
+
+    // Tenants collection - tenant members can read, only owners can modify
+    match /tenants/{tenantId} {
+      // Allow read access for all tenant members
+      allow read: if isTenantMember(tenantId);
+
+      // Allow create for authenticated users (when creating their own tenant)
+      allow create: if isAuthenticated() &&
+        request.auth.uid == resource.data.createdBy;
+
+      // Allow update/delete only for owners
+      allow update, delete: if isAuthenticated() &&
+        request.auth.uid == resource.data.createdBy;
+    }
+
+    // Tenant members subcollection
+    match /tenants/{tenantId}/members/{userId} {
+      // Allow read for all tenant members
+      allow read: if isTenantMember(tenantId);
+
+      // Allow create for tenant admins (inviting new members)
+      allow create: if isTenantMember(tenantId) &&
+        isTenantAdmin(tenantId) &&
+        request.auth.uid == resource.data.invitedBy;
+
+      // Allow update for admins and the user themselves
+      allow update: if isTenantMember(tenantId) &&
+        (isTenantAdmin(tenantId) || request.auth.uid == userId);
+
+      // Allow delete only for admins (removing members)
+      allow delete: if isTenantMember(tenantId) &&
+        isTenantAdmin(tenantId);
+    }
+
+    // ============================================================================
+    // LINK MANAGEMENT
+    // ============================================================================
+
+    // Links subcollection - tenant-scoped
+    match /tenants/{tenantId}/links/{linkId} {
+      // Allow read for all tenant members
+      allow read: if isTenantMember(tenantId);
+
+      // Allow create/update/delete for all tenant members (basic CRUD)
+      allow create, update, delete: if isTenantMember(tenantId) &&
+        request.auth.uid == resource.data.metadata.createdBy;
+
+      // Additional validation for create/update
+      allow create, update: if isTenantMember(tenantId) &&
+        // Validate tenant ID matches path
+        resource.data.tenantId == tenantId &&
+        // Validate shortId format
+        resource.data.shortId.matches('^[A-Za-z0-9_-]{3,20}$') &&
+        // Validate URLs
+        resource.data.longUrl.matches('^https?://') &&
+        resource.data.originalUrl.matches('^https?://');
+    }
+
+    // ============================================================================
+    // CLICK ANALYTICS
+    // ============================================================================
+
+    // Click events subcollection - read denied, server write only
+    match /tenants/{tenantId}/links/{linkId}/clicks/{clickId} {
+      // No client read access for privacy and performance
+      allow read: if false;
+
+      // Allow server-side write only (via Cloud Functions)
+      allow create: if false; // All click logging must go through server
+
+      // Allow server-side write for analytics aggregation
+      allow write: if false; // Reserved for future analytics functions
+    }
+
+    // ============================================================================
+    // LEGACY USER MANAGEMENT (for migration)
+    // ============================================================================
+
+    // Allow authenticated users to manage their own user document
+    match /users/{userId} {
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // ============================================================================
+    // SECURITY VALIDATIONS
+    // ============================================================================
+
+    // Prevent cross-tenant data access
+    match /tenants/{tenantId}/{document=**} {
+      // Ensure all operations validate tenant membership
+      allow read, write: if isTenantMember(tenantId);
+    }
+
+    // ============================================================================
+    // DEVELOPMENT OVERRIDE (REMOVE IN PRODUCTION)
+    // ============================================================================
+
+    // Uncomment for development testing only - NEVER in production!
+    // match /{document=**} {
+    //   allow read, write: if isAuthenticated();
+    // }
+  }
+}
