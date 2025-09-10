@@ -93,12 +93,20 @@
       ]
     },
     {
-      "collectionGroup": "members",
+      "collectionGroup": "links",
       "queryScope": "COLLECTION_GROUP",
       "fields": [
         {
-          "fieldPath": "email",
+          "fieldPath": "tenantId",
           "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isActive",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
         }
       ]
     },

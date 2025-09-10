@@ -10,7 +10,11 @@ export default function QuickStats({ links }: QuickStatsProps) {
   const totalLinks = links.length
   const recentClicks = links
     .filter(link => link.stats.lastClickAt)
-    .sort((a, b) => (b.stats.lastClickAt?.getTime() || 0) - (a.stats.lastClickAt?.getTime() || 0))
+    .sort((a, b) => {
+      const dateA = new Date(a.stats.lastClickAt || 0)
+      const dateB = new Date(b.stats.lastClickAt || 0)
+      return dateB.getTime() - dateA.getTime()
+    })
     .slice(0, 1)[0]?.stats.lastClickAt
 
   const stats = [
@@ -61,37 +65,57 @@ export default function QuickStats({ links }: QuickStatsProps) {
     }
   ]
 
-  function formatRelativeTime(date: Date): string {
+  function formatRelativeTime(date: Date | string | any): string {
+    // Handle various date formats defensively
+    let dateObj: Date
+    
+    if (date instanceof Date) {
+      dateObj = date
+    } else if (typeof date === 'string') {
+      dateObj = new Date(date)
+    } else if (date && typeof date === 'object' && date._seconds) {
+      // Firestore timestamp
+      dateObj = new Date(date._seconds * 1000)
+    } else {
+      // Fallback for any other format
+      dateObj = new Date(date)
+    }
+    
+    // Check if the date is valid
+    if (isNaN(dateObj.getTime())) {
+      return 'Invalid date'
+    }
+    
     const now = new Date()
-    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
+    const diffInSeconds = Math.floor((now.getTime() - dateObj.getTime()) / 1000)
     
     if (diffInSeconds < 60) return 'Just now'
     if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`
     if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`
     if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`
     
-    return date.toLocaleDateString()
+    return dateObj.toLocaleDateString()
   }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
       {stats.map((stat) => (
-        <div key={stat.name} className="bg-white rounded-lg shadow-sm border p-6">
+        <div key={stat.name} className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-6 transition-colors">
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                stat.changeType === 'positive' ? 'bg-green-100 text-green-600' :
-                'bg-gray-100 text-gray-600'
+              <div className={`w-12 h-12 rounded-lg flex items-center justify-center transition-colors ${
+                stat.changeType === 'positive' ? 'bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400' :
+                'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300'
               }`}>
                 {stat.icon}
               </div>
             </div>
             <div className="ml-4 flex-1">
-              <p className="text-sm font-medium text-gray-500">{stat.name}</p>
-              <p className="text-2xl font-semibold text-gray-900">{stat.value}</p>
-              <p className={`text-sm ${
-                stat.changeType === 'positive' ? 'text-green-600' :
-                'text-gray-500'
+              <p className="text-sm font-medium text-gray-500 dark:text-slate-400 transition-colors">{stat.name}</p>
+              <p className="text-2xl font-semibold text-gray-900 dark:text-white transition-colors">{stat.value}</p>
+              <p className={`text-sm transition-colors ${
+                stat.changeType === 'positive' ? 'text-green-600 dark:text-green-400' :
+                'text-gray-500 dark:text-slate-400'
               }`}>
                 {stat.change}
               </p>

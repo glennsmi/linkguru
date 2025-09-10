@@ -9,6 +9,7 @@ import AuthPage from './pages/AuthPage.tsx'
 import DashboardPage from './pages/DashboardPage.tsx'
 import LinkManagementPage from './pages/LinkManagementPage.tsx'
 import AnalyticsPage from './pages/AnalyticsPage.tsx'
+import LinkAnalyticsPage from './pages/LinkAnalyticsPage.tsx'
 import SettingsPage from './pages/SettingsPage.tsx'
 import DesignReferencePage from './pages/DesignReferencePage.tsx'
 import AppLayout from './layouts/AppLayout'
@@ -73,6 +74,7 @@ function App() {
                   <Route path="dashboard" element={<DashboardPage />} />
                   <Route path="links" element={<LinkManagementPage />} />
                   <Route path="analytics" element={<AnalyticsPage />} />
+                  <Route path="analytics/:linkId" element={<LinkAnalyticsPage />} />
                   <Route path="settings" element={<SettingsPage />} />
                 </Route>
               </Routes>

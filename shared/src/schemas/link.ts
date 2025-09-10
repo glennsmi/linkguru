@@ -33,6 +33,20 @@ export const linkMetadataSchema = z.object({
 export const linkStatsSchema = z.object({
   totalClicks: z.number().int().min(0).default(0),
   lastClickAt: z.date().optional(),
+  // Enhanced analytics
+  uniqueClicks: z.number().int().min(0).default(0),
+  deviceStats: z.object({
+    mobile: z.number().int().min(0).default(0),
+    desktop: z.number().int().min(0).default(0),
+    tablet: z.number().int().min(0).default(0),
+  }).optional(),
+  referrerStats: z.record(z.string(), z.number().int().min(0)).optional(),
+  locationStats: z.record(z.string(), z.number().int().min(0)).optional(),
+  timeSeriesData: z.array(z.object({
+    timestamp: z.date(),
+    clicks: z.number().int().min(0),
+    uniqueClicks: z.number().int().min(0),
+  })).optional(),
 });
 
 // Tenant limits schema
@@ -102,6 +116,36 @@ export const clickEventSchema = z.object({
     city: z.string().optional(),
   }).optional(),
   ipHash: z.string().optional(),
+});
+
+// Time analytics schema
+export const timeAnalyticsSchema = z.object({
+  granularity: z.enum(['hourly', '4hourly', 'daily', 'weekly']),
+  period: z.enum(['24h', '7d', '30d', '90d', '1y']),
+  data: z.array(z.object({
+    timestamp: z.date(),
+    clicks: z.number().int().min(0),
+    uniqueClicks: z.number().int().min(0),
+    devices: z.object({
+      mobile: z.number().int().min(0),
+      desktop: z.number().int().min(0),
+      tablet: z.number().int().min(0),
+    }),
+  })),
+});
+
+// Annotation schema
+export const annotationSchema = z.object({
+  id: z.string(),
+  tenantId: z.string(),
+  linkId: z.string().optional(), // Optional - can be for all links or specific link
+  title: z.string(),
+  description: z.string(),
+  timestamp: z.date(),
+  type: z.enum(['event', 'milestone', 'campaign', 'note']),
+  color: z.string().optional(),
+  createdBy: z.string(),
+  createdAt: z.date(),
 });
 
 // API Request/Response schemas
@@ -202,6 +246,7 @@ export const COLLECTIONS = {
   TENANT_MEMBERS: 'members',
   LINKS: 'links',
   CLICKS: 'clicks',
+  ANNOTATIONS: 'annotations',
 } as const;
 
 // Export types
@@ -219,3 +264,7 @@ export type FirestoreLink = z.infer<typeof firestoreLinkSchema>;
 export type FirestoreTenant = z.infer<typeof firestoreTenantSchema>;
 export type FirestoreTenantMember = z.infer<typeof firestoreTenantMemberSchema>;
 export type FirestoreClickEvent = z.infer<typeof firestoreClickEventSchema>;
+
+// Enhanced analytics types
+export type TimeAnalytics = z.infer<typeof timeAnalyticsSchema>;
+export type Annotation = z.infer<typeof annotationSchema>;

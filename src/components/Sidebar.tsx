@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { LayoutDashboard, Link as LinkIcon, BarChart3, Settings, LogOut, User2, ChevronLeft, ChevronRight, Sun, Moon, Palette } from 'lucide-react'
+import { LayoutDashboard, Link as LinkIcon, BarChart3, Settings, LogOut, User2, ChevronLeft, ChevronRight, Sun, Moon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 const navItems = [
@@ -10,9 +10,6 @@ const navItems = [
   { name: 'Settings', icon: Settings, href: '/app/settings' },
 ]
 
-const externalNavItems = [
-  { name: 'Design System', icon: Palette, href: '/design' },
-]
 
 type SidebarMode = 'desktop' | 'mobile'
 
@@ -41,15 +38,18 @@ export default function Sidebar({ mode = 'desktop' }: { mode?: SidebarMode }) {
   const toggleTheme = () => {
     const next = !isDark
     setIsDark(next)
-    
+
     // Force remove and add the class to ensure it's applied
     document.documentElement.classList.remove('dark')
     if (next) {
       document.documentElement.classList.add('dark')
     }
-    
+
     localStorage.setItem('lg_theme', next ? 'dark' : 'light')
-    
+
+    // Dispatch custom event to notify other components of theme change
+    window.dispatchEvent(new CustomEvent('lg_theme_change'))
+
     // Force a re-render by updating state again
     setTimeout(() => {
       setIsDark(next)
@@ -76,7 +76,7 @@ export default function Sidebar({ mode = 'desktop' }: { mode?: SidebarMode }) {
         {/* Collapse button moved to bottom */}
       </div>
 
-      <nav className="flex-1 overflow-y-auto p-2">
+      <nav className="flex-1 p-2">
         {navItems.map((item) => {
           const Icon = item.icon
           return (
@@ -97,7 +97,7 @@ export default function Sidebar({ mode = 'desktop' }: { mode?: SidebarMode }) {
         })}
         
         {/* External Links Section */}
-        <div className={`mt-4 pt-4 border-t border-slate-200 dark:border-slate-700 ${mode === 'desktop' && collapsed ? 'hidden' : ''}`}>
+        {/* <div className={`mt-4 pt-4 border-t border-slate-200 dark:border-slate-700 ${mode === 'desktop' && collapsed ? 'hidden' : ''}`}>
           <p className={`text-xs font-medium ${isDark ? 'text-white' : 'text-slate-700'} mb-2 px-3`}>External</p>
           {externalNavItems.map((item) => {
             const Icon = item.icon
@@ -112,7 +112,7 @@ export default function Sidebar({ mode = 'desktop' }: { mode?: SidebarMode }) {
               </a>
             )
           })}
-        </div>
+        </div> */}
       </nav>
 
       {mode === 'desktop' && (
@@ -122,12 +122,12 @@ export default function Sidebar({ mode = 'desktop' }: { mode?: SidebarMode }) {
               {collapsed ? (
                 <div className="flex">
                   <ChevronRight size={16} />
-                  <ChevronRight size={16} className="-ml-1" />
+                  <ChevronRight size={16} className="-ml-2" />
                 </div>
               ) : (
                 <div className="flex">
                   <ChevronLeft size={16} />
-                  <ChevronLeft size={16} className="-ml-1" />
+                  <ChevronLeft size={16} className="-ml-2" />
                 </div>
               )}
             </button>
@@ -136,20 +136,21 @@ export default function Sidebar({ mode = 'desktop' }: { mode?: SidebarMode }) {
       )}
 
       <div className="border-t p-3 mt-auto border-slate-200 dark:border-slate-700">
-        <div className="flex items-center gap-3 px-3 py-2 rounded-md">
-          <div className="w-8 h-8 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center">
-            <User2 size={16} className={`${isDark ? 'text-white' : 'text-white'}`} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'} truncate ${mode === 'desktop' && collapsed ? 'hidden' : ''}`}>{user?.displayName || user?.email}</p>
-            <NavLink to="/app/settings" className={`text-xs transition-colors hover:underline ${isDark ? 'text-emerald-300 hover:text-emerald-200' : 'text-emerald-600 hover:text-emerald-700'} ${mode === 'desktop' && collapsed ? 'hidden' : ''}`}>Profile</NavLink>
-          </div>
+
+        <div className="flex items-center justify-between gap-2 mt-2">
+          <button onClick={logout} className={`flex-1 flex items-center gap-2 text-xs group ${isDark ? 'text-slate-300 hover:text-white hover:bg-slate-800' : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100'} px-3 py-2 rounded-md transition-colors`}>
+              <User2 size={14} className={`${isDark ? 'text-white' : 'text-white'}`} />
+              <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'} truncate ${mode === 'desktop' && collapsed ? 'hidden' : ''}`}>{user?.displayName || user?.email}</span>
+          </button>
         </div>
         <div className="flex items-center justify-between gap-2 mt-2">
           <button onClick={toggleTheme} className={`flex-1 flex items-center gap-2 text-xs group ${isDark ? 'text-slate-300 hover:text-white hover:bg-slate-800' : 'text-slate-700 hover:text-cyan-700 hover:bg-cyan-50'} px-3 py-2 rounded-md transition-colors`}>
             {isDark ? <Sun size={14} className={`transition-colors ${isDark ? 'text-white group-hover:text-white' : 'text-slate-700 group-hover:text-slate-900'}`} /> : <Moon size={14} className={`transition-colors ${isDark ? 'text-white group-hover:text-white' : 'text-slate-700 group-hover:text-slate-900'}`} />}
             <span className={`transition-colors ${isDark ? 'text-white group-hover:text-white' : 'text-slate-800 group-hover:text-slate-900'} ${mode === 'desktop' && collapsed ? 'hidden' : ''}`}>{isDark ? 'Light mode' : 'Dark mode'}</span>
           </button>
+          
+        </div>
+        <div className="flex items-center justify-between gap-2 mt-2">
           <button onClick={logout} className={`flex-1 flex items-center gap-2 text-xs group ${isDark ? 'text-slate-300 hover:text-white hover:bg-slate-800' : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100'} px-3 py-2 rounded-md transition-colors`}>
             <LogOut size={14} className={`transition-colors ${isDark ? 'text-slate-300 group-hover:text-white' : 'text-slate-700 group-hover:text-slate-900'}`} />
             <span className={`transition-colors ${isDark ? 'text-slate-300 group-hover:text-white' : 'text-slate-700 group-hover:text-slate-900'} ${mode === 'desktop' && collapsed ? 'hidden' : ''}`}>Logout</span>

@@ -1,30 +1,11 @@
 import { onRequest, onCall } from 'firebase-functions/v2/https';
 import { setGlobalOptions } from 'firebase-functions/v2';
 import * as admin from 'firebase-admin';
-import cors from 'cors';
-import {
-  createSuccessResponse,
-  createErrorResponse,
-  User,
-  userSchema,
-  paginationSchema,
-  COLLECTIONS,
-  FirestoreUser,
-  // Link Guru imports
-  Link,
-  Tenant,
-  LINK_COLLECTIONS,
-  createLinkRequestSchema,
-  getLinksRequestSchema,
-  type CreateLinkResponseType,
-  type FirestoreLink,
-  type FirestoreTenant,
-  DeviceType
-} from '../../shared/dist';
+import * as QRCode from 'qrcode';
 
 // Set global options for all functions
 setGlobalOptions({
-  region: 'europe-west2',
+  region: 'us-central1',
   maxInstances: 10,
 });
 
@@ -32,288 +13,106 @@ setGlobalOptions({
 admin.initializeApp();
 const db = admin.firestore();
 
-// CORS configuration
-const corsHandler = cors({ origin: true });
-
-// Helper function to convert Firestore timestamp to Date
-const convertTimestamps = (data: any, id: string): User => {
-  return {
-    id,
-    email: data.email,
-    displayName: data.displayName,
-    createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt),
-    updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt),
-  };
-};
+// CORS configuration (unused for now)
+// const corsHandler = cors({ origin: true });
 
 // ============================================================================
-// LINK GURU HELPER FUNCTIONS
+// BASIC FUNCTIONS
 // ============================================================================
 
-// Generate a unique short ID
-const generateShortId = (length: number = 6): string => {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let result = '';
-  for (let i = 0; i < length; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
-};
-
-// Canonicalize UTM parameters into URL
-const canonicalizeUrlWithUtm = (baseUrl: string, utm?: any): string => {
-  if (!utm) return baseUrl;
-
-  const url = new URL(baseUrl);
-  const params = url.searchParams;
-
-  // Standard UTM parameters (lowercased)
-  const utmKeys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
-
-  utmKeys.forEach(key => {
-    const value = utm[key.replace('utm_', '')];
-    if (value) {
-      // Lowercase the key, preserve value casing
-      params.set(key, value);
-    }
-  });
-
-  // Add any custom UTM parameters
-  Object.entries(utm).forEach(([key, value]) => {
-    if (value && !utmKeys.includes(`utm_${key}`)) {
-      params.set(`utm_${key}`, value as string);
-    }
-  });
-
-  return url.toString();
-};
-
-// Convert Firestore Link document to Link type
-const convertFirestoreLink = (data: any, id: string): Link => {
-  return {
-    id,
-    tenantId: data.tenantId,
-    shortId: data.shortId,
-    longUrl: data.longUrl,
-    originalUrl: data.originalUrl,
-    utm: data.utm || null,
-    metadata: {
-      title: data.metadata?.title,
-      tags: data.metadata?.tags || [],
-      createdBy: data.metadata?.createdBy,
-      createdAt: data.metadata?.createdAt?.toDate ? data.metadata.createdAt.toDate() : new Date(data.metadata.createdAt),
-      lastModified: data.metadata?.lastModified?.toDate ? data.metadata.lastModified.toDate() : undefined,
-      isActive: data.metadata?.isActive ?? true,
-      expiresAt: data.metadata?.expiresAt?.toDate ? data.metadata.expiresAt.toDate() : undefined,
-    },
-    qrConfig: data.qrConfig || null,
-    stats: {
-      totalClicks: data.stats?.totalClicks || 0,
-      lastClickAt: data.stats?.lastClickAt?.toDate ? data.stats.lastClickAt.toDate() : undefined,
-    },
-  };
-};
-
-// Convert Firestore Tenant document to Tenant type
-const convertFirestoreTenant = (data: any, id: string): Tenant => {
-  return {
-    id,
-    name: data.name,
-    plan: data.plan || 'free',
-    limits: {
-      activeLinks: data.limits?.activeLinks || 5,
-      monthlyClicks: data.limits?.monthlyClicks || 1000,
-    },
-    createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt),
-    createdBy: data.createdBy,
-    settings: {
-      defaultUtm: data.settings?.defaultUtm,
-      brandColors: data.settings?.brandColors,
-    },
-  };
-};
-
-// Check if user is a member of tenant
-const isTenantMember = async (tenantId: string, userId: string): Promise<boolean> => {
-  try {
-    const memberDoc = await db.collection(LINK_COLLECTIONS.TENANTS)
-      .doc(tenantId)
-      .collection(LINK_COLLECTIONS.TENANT_MEMBERS)
-      .doc(userId)
-      .get();
-    return memberDoc.exists;
-  } catch (error) {
-    return false;
-  }
-};
-
-// Validate URL accessibility (basic check)
-const validateUrl = async (url: string): Promise<boolean> => {
-  try {
-    const response = await fetch(url, {
-      method: 'HEAD',
-      signal: AbortSignal.timeout(5000), // 5 second timeout
-    });
-    return response.ok;
-  } catch (error) {
-    // For development, accept URLs even if we can't validate them
-    console.warn('URL validation failed:', error);
-    return true;
-  }
-};
-
-// HTTP Function Example
-export const helloWorld = onRequest((request, response) => {
-  corsHandler(request, response, () => {
-    try {
-      const message = 'Hello from Firebase Functions v2 in Europe West 2!';
-      const apiResponse = createSuccessResponse({ message }, 'Function executed successfully');
-      
-      response.json(apiResponse);
-    } catch (error) {
-      const errorResponse = createErrorResponse(
-        'Internal server error',
-        error instanceof Error ? error.message : 'Unknown error'
-      );
-      response.status(500).json(errorResponse);
-    }
-  });
+// Hello World function
+export const helloWorld = onRequest({ cors: true }, (req, res) => {
+  res.json({ message: 'Hello from Firebase Functions!' });
 });
 
-// Callable Function Example with Firestore integration
-export const getUsers = onCall(async (request) => {
+// Get all users
+export const getUsers = onRequest({ cors: true }, async (req, res) => {
   try {
-    // Validate pagination parameters
-    const paginationResult = paginationSchema.safeParse(request.data);
-    
-    if (!paginationResult.success) {
-      return createErrorResponse('Invalid pagination parameters', paginationResult.error.message);
-    }
-
-    const { page, limit } = paginationResult.data;
-
-    // Get users from Firestore
-    const usersRef = db.collection(COLLECTIONS.USERS);
-    const snapshot = await usersRef
-      .orderBy('createdAt', 'desc')
-      .limit(limit)
-      .offset((page - 1) * limit)
-      .get();
-
-    const users: User[] = [];
-    snapshot.forEach(doc => {
-      const userData = doc.data() as FirestoreUser;
-      users.push(convertTimestamps(userData, doc.id));
-    });
-
-    // Get total count for pagination
-    const totalSnapshot = await usersRef.count().get();
-    const total = totalSnapshot.data().count;
-
-    const response = createSuccessResponse(users, 'Users retrieved successfully');
-    
-    return {
-      ...response,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
+    const snapshot = await db.collection('users').get();
+    const users = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+    res.json({ success: true, data: users });
   } catch (error) {
-    return createErrorResponse(
-      'Failed to retrieve users',
-      error instanceof Error ? error.message : 'Unknown error'
-    );
+    console.error('Error getting users:', error);
+    res.status(500).json({ success: false, message: 'Failed to get users' });
   }
 });
 
-// Callable Function to create a user in Firestore
+// Create user
 export const createUser = onCall(async (request) => {
   try {
-    // Check if user is authenticated
-    if (!request.auth) {
-      return createErrorResponse('Authentication required', 'User must be logged in');
-    }
-
-    // Validate the user data using Zod schema
-    const userData = userSchema.omit({ id: true, createdAt: true, updatedAt: true }).parse(request.data);
+    const { id, email, displayName } = request.data;
     
-    const now = admin.firestore.FieldValue.serverTimestamp();
-    const newUserData = {
-      email: userData.email,
-      displayName: userData.displayName,
-      createdAt: now,
-      updatedAt: now,
+    if (!id || !email) {
+      return { success: false, message: 'ID and email are required' };
+    }
+    
+    const userRef = db.collection('users').doc(id);
+    
+    const userData = {
+      id,
+      email,
+      displayName: displayName || '',
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
-
-    // Save to Firestore
-    const docRef = await db.collection(COLLECTIONS.USERS).add(newUserData);
-    const doc = await docRef.get();
-    const createdUser = convertTimestamps(doc.data() as FirestoreUser, doc.id);
-
-    return createSuccessResponse(createdUser, 'User created successfully');
+    
+    await userRef.set(userData);
+    
+    return { success: true, data: { id } };
   } catch (error) {
-    return createErrorResponse(
-      'Failed to create user',
-      error instanceof Error ? error.message : 'Invalid user data'
-    );
+    console.error('Error creating user:', error);
+    return { success: false, message: 'Failed to create user' };
   }
 });
 
-// Callable Function to get current user profile
+// Get current user
 export const getCurrentUser = onCall(async (request) => {
   try {
-    if (!request.auth) {
-      return createErrorResponse('Authentication required', 'User must be logged in');
+    const { uid } = request.data;
+    if (!uid) {
+      return { success: false, message: 'User ID is required' };
     }
-
-    const userDoc = await db.collection(COLLECTIONS.USERS).doc(request.auth.uid).get();
     
+    const userDoc = await db.collection('users').doc(uid).get();
     if (!userDoc.exists) {
-      return createErrorResponse('User not found', 'User profile does not exist');
+      return { success: false, message: 'User not found' };
     }
-
-    const userData = userDoc.data() as FirestoreUser;
-    const user = convertTimestamps(userData, userDoc.id);
-
-    return createSuccessResponse(user, 'User profile retrieved successfully');
+    
+    const userData = {
+      id: userDoc.id,
+      ...userDoc.data(),
+    };
+    
+    return { success: true, data: userData };
   } catch (error) {
-    return createErrorResponse(
-      'Failed to retrieve user profile',
-      error instanceof Error ? error.message : 'Unknown error'
-    );
+    console.error('Error getting current user:', error);
+    return { success: false, message: 'Failed to get current user' };
   }
 });
 
-// Callable Function to update user profile
+// Update user
 export const updateUser = onCall(async (request) => {
   try {
-    if (!request.auth) {
-      return createErrorResponse('Authentication required', 'User must be logged in');
+    const { uid, ...updateData } = request.data;
+    if (!uid) {
+      return { success: false, message: 'User ID is required' };
     }
 
-    const updateData = userSchema.omit({ id: true, createdAt: true, updatedAt: true, email: true }).parse(request.data);
-
+    const userRef = db.collection('users').doc(uid);
     const updatePayload = {
       ...updateData,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
 
-    await db.collection(COLLECTIONS.USERS).doc(request.auth.uid).update(updatePayload);
-
-    // Get updated user
-    const userDoc = await db.collection(COLLECTIONS.USERS).doc(request.auth.uid).get();
-    const userData = userDoc.data() as FirestoreUser;
-    const user = convertTimestamps(userData, userDoc.id);
-
-    return createSuccessResponse(user, 'User profile updated successfully');
+    await userRef.update(updatePayload);
+    
+    return { success: true, data: { id: uid } };
   } catch (error) {
-    return createErrorResponse(
-      'Failed to update user profile',
-      error instanceof Error ? error.message : 'Invalid user data'
-    );
+    console.error('Error updating user:', error);
+    return { success: false, message: 'Failed to update user' };
   }
 });
 
@@ -321,286 +120,433 @@ export const updateUser = onCall(async (request) => {
 // LINK GURU FUNCTIONS
 // ============================================================================
 
-// Create Short Link Function
+// Create short link
 export const createShortLink = onCall(async (request) => {
   try {
-    if (!request.auth) {
-      return createErrorResponse('Authentication required', 'User must be logged in');
+    console.log('🔗 createShortLink called with request.data:', request.data);
+    console.log('👤 request.auth:', request.auth);
+    
+    const { url, customAlias, tenantId, utmSource, utmMedium, utmCampaign, utmTerm, utmContent } = request.data;
+    
+    console.log('📋 Extracted parameters:', {
+      url,
+      customAlias,
+      tenantId,
+      utmSource,
+      utmMedium,
+      utmCampaign,
+      utmTerm,
+      utmContent
+    });
+    
+    if (!url || !tenantId) {
+      console.log('❌ Missing required parameters:', { url: !!url, tenantId: !!tenantId });
+      return { success: false, message: 'URL and tenant ID are required' };
     }
-
-    // Validate request data
-    const requestData = createLinkRequestSchema.parse(request.data);
-    const { tenantId, originalUrl, customSlug, utm, qrConfig, tags, expiresAt } = requestData;
-
-    // Check tenant membership
-    const isMember = await isTenantMember(tenantId, request.auth.uid);
-    if (!isMember) {
-      return createErrorResponse('Access denied', 'You are not a member of this tenant');
-    }
-
-    // Validate URL
-    const isValidUrl = await validateUrl(originalUrl);
-    if (!isValidUrl) {
-      return createErrorResponse('Invalid URL', 'The provided URL is not accessible');
-    }
-
-    // Check tenant link limits
-    const tenantDoc = await db.collection(LINK_COLLECTIONS.TENANTS).doc(tenantId).get();
-    if (!tenantDoc.exists) {
-      return createErrorResponse('Tenant not found', 'Invalid tenant ID');
-    }
-
-    const tenant = convertFirestoreTenant(tenantDoc.data() as FirestoreTenant, tenantId);
-    const activeLinksQuery = await db.collection(LINK_COLLECTIONS.TENANTS)
-      .doc(tenantId)
-      .collection(LINK_COLLECTIONS.LINKS)
-      .where('metadata.isActive', '==', true)
-      .count()
-      .get();
-
-    if (activeLinksQuery.data().count >= tenant.limits.activeLinks) {
-      return createErrorResponse('Limit exceeded', `Free tier allows up to ${tenant.limits.activeLinks} active links`);
-    }
-
-    // Generate or validate short ID
-    let shortId = customSlug || generateShortId();
-
-    // Check if shortId is available (global uniqueness)
-    const existingLink = await db.collectionGroup(LINK_COLLECTIONS.LINKS)
+    
+    // Generate short ID
+    const shortId = customAlias || generateShortId();
+    console.log('🔑 Generated shortId:', shortId);
+    
+    // Check if short ID already exists
+    console.log('🔍 Checking if shortId exists...');
+    const existingLink = await db.collection('links')
       .where('shortId', '==', shortId)
       .limit(1)
       .get();
 
     if (!existingLink.empty) {
-      if (customSlug) {
-        return createErrorResponse('Slug taken', 'This custom slug is already in use');
-      }
-      // Regenerate for auto-generated slugs
-      shortId = generateShortId();
+      console.log('❌ Short ID already exists:', shortId);
+      return { success: false, message: 'Short ID already exists' };
     }
 
-    // Canonicalize URL with UTM parameters
-    const longUrl = canonicalizeUrlWithUtm(originalUrl, utm);
+    console.log('✅ Short ID is unique, creating link document...');
 
     // Create link document
-    const now = admin.firestore.FieldValue.serverTimestamp();
     const linkData = {
+      shortId,
+      originalUrl: url,
       tenantId,
-      shortId,
-      longUrl,
-      originalUrl,
-      utm: utm || null,
-      metadata: {
-        createdBy: request.auth.uid,
-        createdAt: now,
-        lastModified: now,
+      utmSource: utmSource || null,
+      utmMedium: utmMedium || null,
+      utmCampaign: utmCampaign || null,
+      utmTerm: utmTerm || null,
+      utmContent: utmContent || null,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdBy: request.auth?.uid || null,
         isActive: true,
-        tags: tags || [],
-        expiresAt: expiresAt ? admin.firestore.Timestamp.fromDate(expiresAt) : null,
-      },
-      qrConfig: qrConfig || null,
-      stats: {
-        totalClicks: 0,
-        lastClickAt: null,
-      },
+      clickCount: 0,
+      lastClickedAt: null,
     };
-
-    const linkRef = await db.collection(LINK_COLLECTIONS.TENANTS)
-      .doc(tenantId)
-      .collection(LINK_COLLECTIONS.LINKS)
-      .add(linkData);
-
-    const response: CreateLinkResponseType = {
-      linkId: linkRef.id,
+    
+    console.log('💾 Saving link to Firestore:', linkData);
+    const linkRef = await db.collection('links').add(linkData);
+    console.log('✅ Link saved with ID:', linkRef.id);
+    
+    const response = {
+      id: linkRef.id,
       shortId,
-      shortUrl: `https://s.linkguru.app/r/${shortId}`,
-      qrUrls: {
-        png: `https://s.linkguru.app/qr/${shortId}.png`,
-        svg: `https://s.linkguru.app/qr/${shortId}.svg`,
-      },
+      shortUrl: `https://linkguru.app/${shortId}`,
+      originalUrl: url,
+      tenantId,
+      utmSource: utmSource || null,
+      utmMedium: utmMedium || null,
+      utmCampaign: utmCampaign || null,
+      utmTerm: utmTerm || null,
+      utmContent: utmContent || null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      createdBy: request.auth?.uid || null,
+      isActive: true,
+      clickCount: 0,
+      lastClickedAt: null,
     };
-
-    return createSuccessResponse(response, 'Short link created successfully');
-
+    
+    console.log('📤 Returning response:', response);
+    return { success: true, data: response };
   } catch (error) {
-    console.error('Create short link error:', error);
-    return createErrorResponse(
-      'Failed to create short link',
-      error instanceof Error ? error.message : 'Invalid request data'
-    );
+    console.error('💥 Error creating short link:', error);
+    return { success: false, message: 'Failed to create short link' };
   }
 });
 
-// Redirect Function (HTTP endpoint)
-export const redirect = onRequest(
-  { cors: false }, // No CORS for redirects
-  async (request, response) => {
-    try {
-      const { shortId } = request.params as { shortId: string };
+// Redirect function
+export const redirect = onRequest({ cors: true }, async (req, res) => {
+  try {
+    // Extract shortId from URL path - Firebase Hosting sends /{shortId} to this function
+    const urlPath = req.url || '';
+    const shortId = urlPath.replace('/', '').split('?')[0]; // Remove leading / and any query params
+    
+    console.log('🔗 Redirect called with URL:', req.url, 'extracted shortId:', shortId);
 
       if (!shortId) {
-        response.status(400).send('Short ID is required');
+      res.status(400).json({ error: 'Short ID is required' });
         return;
       }
 
-      // Find the link by shortId
-      const linkQuery = await db.collectionGroup(LINK_COLLECTIONS.LINKS)
+    // Find the link
+    const linkQuery = await db.collection('links')
         .where('shortId', '==', shortId)
+      .where('isActive', '==', true)
         .limit(1)
         .get();
 
       if (linkQuery.empty) {
-        response.status(404).send('Link not found');
+      res.status(404).json({ error: 'Link not found' });
         return;
       }
 
       const linkDoc = linkQuery.docs[0];
-      const linkData = linkDoc.data() as FirestoreLink;
-      const link = convertFirestoreLink(linkData, linkDoc.id);
-
-      // Check if link is active
-      if (!link.metadata.isActive) {
-        response.status(410).send('Link is inactive');
-        return;
-      }
-
-      // Check if link has expired
-      if (link.metadata.expiresAt && link.metadata.expiresAt < new Date()) {
-        response.status(410).send('Link has expired');
-        return;
-      }
-
-      // Log click event (fire and forget for performance)
-      const userAgent = request.headers['user-agent'] || '';
-      const referrer = request.headers.referer || '';
-
-      // Basic device detection
-      let device: DeviceType = 'unknown';
-      if (userAgent.includes('Mobile')) {
-        device = 'mobile';
-      } else if (userAgent.includes('Tablet')) {
-        device = 'tablet';
-      } else if (!userAgent.includes('bot')) {
-        device = 'desktop';
-      } else {
-        device = 'bot';
-      }
-
-      const clickData = {
-        linkId: link.id,
-        tenantId: link.tenantId,
-        timestamp: admin.firestore.FieldValue.serverTimestamp(),
-        bucket: Math.floor(Math.random() * 10), // For sharding
-        referrer: referrer || null,
-        userAgent: userAgent || null,
-        device,
-        browser: null, // Would need additional parsing
-        os: null, // Would need additional parsing
-        location: null, // Would need IP geolocation service
-        ipHash: null, // Would need IP hashing for privacy
-      };
-
-      // Fire and forget - don't wait for click logging
-      db.collection(LINK_COLLECTIONS.TENANTS)
-        .doc(link.tenantId)
-        .collection(LINK_COLLECTIONS.LINKS)
-        .doc(link.id)
-        .collection(LINK_COLLECTIONS.CLICKS)
-        .add(clickData)
-        .catch(err => console.error('Failed to log click:', err));
-
-      // Update click count (also fire and forget)
-      db.collection(LINK_COLLECTIONS.TENANTS)
-        .doc(link.tenantId)
-        .collection(LINK_COLLECTIONS.LINKS)
-        .doc(link.id)
-        .update({
-          'stats.totalClicks': admin.firestore.FieldValue.increment(1),
-          'stats.lastClickAt': admin.firestore.FieldValue.serverTimestamp(),
-        })
-        .catch(err => console.error('Failed to update click count:', err));
-
-      // Perform redirect
-      response.redirect(302, link.longUrl);
-
-    } catch (error) {
-      console.error('Redirect error:', error);
-      response.status(500).send('Internal server error');
-    }
-  }
-);
-
-// Get Links Function (for tenant management)
-export const getLinks = onCall(async (request) => {
-  try {
-    if (!request.auth) {
-      return createErrorResponse('Authentication required', 'User must be logged in');
-    }
-
-    const requestData = getLinksRequestSchema.parse(request.data);
-    const { tenantId, limit = 20, offset, status, sortBy = 'createdAt', sortOrder = 'desc' } = requestData;
-
-    // Check tenant membership
-    const isMember = await isTenantMember(tenantId, request.auth.uid);
-    if (!isMember) {
-      return createErrorResponse('Access denied', 'You are not a member of this tenant');
-    }
-
-    let query: admin.firestore.Query = db.collection(LINK_COLLECTIONS.TENANTS)
-      .doc(tenantId)
-      .collection(LINK_COLLECTIONS.LINKS);
-
-    // Apply filters
-    if (status) {
-      if (status === 'active') {
-        query = query.where('metadata.isActive', '==', true);
-      } else if (status === 'inactive') {
-        query = query.where('metadata.isActive', '==', false);
-      } else if (status === 'expired') {
-        // Note: Firestore doesn't support complex date queries easily
-        // This would need to be handled client-side or with a different approach
-      }
-    }
-
-    // Apply sorting
-    const sortField = sortBy === 'createdAt' ? 'metadata.createdAt' :
-                     sortBy === 'clicks' ? 'stats.totalClicks' : 'metadata.createdAt';
-    query = query.orderBy(sortField, sortOrder);
-
-    // Apply pagination
-    if (offset) {
-      const offsetDoc = await db.collection(LINK_COLLECTIONS.TENANTS)
-        .doc(tenantId)
-        .collection(LINK_COLLECTIONS.LINKS)
-        .doc(offset)
-        .get();
-
-      if (offsetDoc.exists) {
-        query = query.startAfter(offsetDoc);
-      }
-    }
-
-    query = query.limit(limit);
-
-    const snapshot = await query.get();
-    const links: Link[] = [];
-
-    snapshot.forEach(doc => {
-      const linkData = doc.data() as FirestoreLink;
-      links.push(convertFirestoreLink(linkData, doc.id));
+    const linkData = linkDoc.data();
+    
+    // Update click count
+    await linkDoc.ref.update({
+      clickCount: admin.firestore.FieldValue.increment(1),
+      lastClickedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
-
-    // Note: Total count calculation removed for simplicity
-    // In production, you might want to maintain a counter or use pagination tokens
-
-    return createSuccessResponse(links, 'Links retrieved successfully');
-
+    
+    // Record click analytics
+    const clickData = {
+      linkId: linkDoc.id,
+      shortId,
+      tenantId: linkData.tenantId,
+      clickedAt: admin.firestore.FieldValue.serverTimestamp(),
+      userAgent: req.get('User-Agent') || '',
+      ipAddress: req.ip || req.connection.remoteAddress || '',
+      referer: req.get('Referer') || '',
+      deviceType: getDeviceType(req.get('User-Agent') || ''),
+    };
+    
+    await db.collection('clicks').add(clickData);
+    
+    // Redirect to original URL
+    res.redirect(302, linkData.originalUrl);
   } catch (error) {
-    console.error('Get links error:', error);
-    return createErrorResponse(
-      'Failed to retrieve links',
-      error instanceof Error ? error.message : 'Invalid request'
-    );
+    console.error('Error redirecting:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
+// Create tenant
+export const createTenant = onCall(async (request) => {
+  try {
+    const { name } = request.data;
+    
+    if (!name || typeof name !== 'string' || name.trim().length === 0) {
+      return { success: false, message: 'Tenant name is required' };
+    }
+    
+    if (!request.auth?.uid) {
+      return { success: false, message: 'Authentication required' };
+    }
+    
+    // Create tenant document
+    const tenantData = {
+      name: name.trim(),
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdBy: request.auth.uid,
+      isActive: true,
+    };
+    
+    const tenantRef = await db.collection('tenants').add(tenantData);
+    
+    // Add user as tenant member with owner role
+    const memberData = {
+      userId: request.auth.uid,
+      tenantId: tenantRef.id,
+      role: 'owner',
+      joinedAt: admin.firestore.FieldValue.serverTimestamp(),
+      isActive: true,
+    };
+    
+    await db.collection('members').add(memberData);
+    
+    return {
+      success: true,
+      data: {
+        id: tenantRef.id,
+        name: name.trim(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        createdBy: request.auth.uid,
+        isActive: true,
+      }
+    };
+    } catch (error) {
+    console.error('Error creating tenant:', error);
+    return { success: false, message: 'Failed to create tenant' };
+  }
+});
+
+// Get user tenants
+export const getUserTenants = onCall(async (request) => {
+  try {
+    if (!request.auth?.uid) {
+      return { success: false, message: 'Authentication required' };
+    }
+    
+    // Get user's tenant memberships
+    const membershipsQuery = await db.collection('members')
+      .where('userId', '==', request.auth.uid)
+      .where('isActive', '==', true)
+      .get();
+    
+    if (membershipsQuery.empty) {
+      return { success: true, data: [] };
+    }
+    
+    // Get tenant details
+    const tenantIds = membershipsQuery.docs.map(doc => doc.data().tenantId);
+    const tenantsQuery = await db.collection('tenants')
+      .where(admin.firestore.FieldPath.documentId(), 'in', tenantIds)
+      .where('isActive', '==', true)
+      .get();
+    
+    const tenants = tenantsQuery.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        name: data.name,
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt),
+        updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt),
+        createdBy: data.createdBy,
+        isActive: data.isActive,
+      };
+    });
+    
+    return { success: true, data: tenants };
+  } catch (error) {
+    console.error('Error getting user tenants:', error);
+    return { success: false, message: 'Failed to get user tenants' };
+  }
+});
+
+// Get links for tenant
+export const getLinks = onCall(async (request) => {
+  try {
+    console.log('🔍 getLinks called with request.data:', request.data);
+    console.log('👤 request.auth:', request.auth);
+    
+    const { tenantId, page = 1, limit = 10 } = request.data;
+    
+    console.log('📋 Extracted parameters:', { tenantId, page, limit });
+    
+    if (!request.auth?.uid) {
+      console.log('❌ Authentication required');
+      return { success: false, message: 'Authentication required' };
+    }
+    
+    if (!tenantId) {
+      console.log('❌ Tenant ID is required');
+      return { success: false, message: 'Tenant ID is required' };
+    }
+    
+    console.log('🔍 Checking user membership for tenant...');
+    // Verify user has access to tenant
+    const membershipQuery = await db.collection('members')
+      .where('userId', '==', request.auth.uid)
+      .where('tenantId', '==', tenantId)
+      .where('isActive', '==', true)
+      .limit(1)
+      .get();
+    
+    console.log('👥 Membership query result:', membershipQuery.empty ? 'No membership found' : 'Membership found');
+    
+    if (membershipQuery.empty) {
+      console.log('❌ Access denied to tenant');
+      return { success: false, message: 'Access denied to tenant' };
+    }
+    
+    console.log('✅ User has access, querying links...');
+    // Get links with pagination (temporarily no orderBy until index builds)
+    const offset = (page - 1) * limit;
+    const linksQuery = await db.collection('links')
+      .where('tenantId', '==', tenantId)
+      .offset(offset)
+      .limit(limit)
+      .get();
+    
+    console.log('📊 Links query result:', linksQuery.size, 'documents found');
+    
+    const links = linksQuery.docs
+      .map(doc => {
+        const data = doc.data();
+        const link = {
+          id: doc.id,
+          tenantId: data.tenantId,
+          shortId: data.shortId,
+          longUrl: data.originalUrl, // Map to expected property name
+          originalUrl: data.originalUrl,
+          utm: {
+            source: data.utmSource,
+            medium: data.utmMedium,
+            campaign: data.utmCampaign,
+            term: data.utmTerm,
+            content: data.utmContent,
+          },
+        metadata: {
+          title: data.title || undefined,
+          tags: data.tags || [],
+          createdBy: data.createdBy,
+          createdAt: (data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt)).toISOString(),
+          lastModified: (data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt)).toISOString(),
+          isActive: data.isActive,
+          expiresAt: data.expiresAt?.toDate ? data.expiresAt.toDate().toISOString() : undefined,
+        },
+          qrConfig: data.qrConfig || null,
+          stats: {
+            totalClicks: data.clickCount || 0,
+            lastClickAt: data.lastClickedAt?.toDate ? data.lastClickedAt.toDate().toISOString() : undefined,
+          },
+        };
+        console.log('🔗 Processing link with proper structure:', link);
+        return link;
+      })
+      .filter(link => link.metadata.isActive) // Filter active links client-side
+      .sort((a, b) => new Date(b.metadata.createdAt).getTime() - new Date(a.metadata.createdAt).getTime()); // Sort by createdAt desc client-side
+    
+    const result = {
+      success: true,
+      data: {
+        links,
+        page,
+        limit,
+        total: links.length,
+      }
+    };
+    
+    console.log('📤 Returning getLinks result:', result);
+    return result;
+  } catch (error) {
+    console.error('💥 Error getting links:', error);
+    return { success: false, message: 'Failed to get links' };
+  }
+});
+
+// Generate QR code
+export const generateQR = onRequest({ cors: true }, async (req, res) => {
+  try {
+    const { shortId, format = 'svg' } = req.query;
+    
+    if (!shortId || typeof shortId !== 'string') {
+      res.status(400).json({ error: 'Short ID is required' });
+      return;
+    }
+    
+    // Verify the link exists
+    const linkQuery = await db.collection('links')
+      .where('shortId', '==', shortId)
+      .where('isActive', '==', true)
+      .limit(1)
+        .get();
+
+    if (linkQuery.empty) {
+      res.status(404).json({ error: 'Link not found' });
+      return;
+    }
+    
+    const shortUrl = `https://linkguru.app/${shortId}`;
+    
+    if (format === 'svg') {
+      const qrSvg = await QRCode.toString(shortUrl, { 
+        type: 'svg' as const,
+        width: 200,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      });
+      
+      res.setHeader('Content-Type', 'image/svg+xml');
+      res.send(qrSvg);
+    } else if (format === 'png') {
+      const qrPng = await QRCode.toBuffer(shortUrl, { 
+        type: 'png' as const,
+        width: 200,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      });
+      
+      res.setHeader('Content-Type', 'image/png');
+      res.send(qrPng);
+    } else {
+      res.status(400).json({ error: 'Invalid format. Use svg or png' });
+      return;
+    }
+  } catch (error) {
+    console.error('Error generating QR code:', error);
+    res.status(500).json({ error: 'Failed to generate QR code' });
+  }
+});
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+// Generate short ID
+function generateShortId(length: number = 6): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
+// Get device type from user agent
+function getDeviceType(userAgent: string): string {
+  const ua = userAgent.toLowerCase();
+  if (/mobile|android|iphone|ipod|blackberry|iemobile|opera mini/i.test(ua)) {
+    return 'mobile';
+  } else if (/tablet|ipad|playbook|silk/i.test(ua)) {
+    return 'tablet';
+  } else {
+    return 'desktop';
+  }
+}

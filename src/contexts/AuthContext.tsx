@@ -30,7 +30,7 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
-  const functions = getFunctions(auth.app, 'europe-west2')
+  const functions = getFunctions(auth.app, 'us-central1')
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {

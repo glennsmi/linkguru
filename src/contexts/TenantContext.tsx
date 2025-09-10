@@ -59,38 +59,46 @@ export const TenantProvider: React.FC<TenantProviderProps> = ({ children }) => {
   const [currentTenant, setCurrentTenant] = useState<Tenant | null>(null)
   const [links, setLinks] = useState<Link[]>([])
   const [loading, setLoading] = useState(false)
-  const functions = getFunctions(auth.app, 'europe-west2')
+  const functions = getFunctions(auth.app, 'us-central1')
 
-  // Initialize with a default tenant for demo purposes
+  // Load user's tenants on auth change
   useEffect(() => {
     if (auth.currentUser && !currentTenant) {
-      // For demo, create a default tenant
-      createTenant('My Organization')
+      loadUserTenants()
     }
   }, [auth.currentUser])
+
+  const loadUserTenants = async () => {
+    try {
+      setLoading(true)
+      const getUserTenants = httpsCallable(functions, 'getUserTenants')
+      const result = await getUserTenants({})
+      
+      const response = result.data as { success: boolean; message: string; data?: Tenant[] }
+      if (response.success && response.data && response.data.length > 0) {
+        // Set the first tenant as current
+        setCurrentTenant(response.data[0])
+      }
+    } catch (error) {
+      console.error('Failed to load tenants:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const createTenant = async (name: string) => {
     try {
       setLoading(true)
-      // For demo purposes, create a mock tenant
-      const mockTenant: Tenant = {
-        id: 'demo-tenant-1',
-        name,
-        plan: 'free',
-        limits: {
-          activeLinks: 5,
-          monthlyClicks: 1000
-        },
-        createdAt: new Date(),
-        createdBy: auth.currentUser?.uid || '',
-        settings: {
-          defaultUtm: undefined,
-          brandColors: undefined
-        }
-      }
+      const createTenantFunction = httpsCallable(functions, 'createTenant')
+      const result = await createTenantFunction({ name })
       
-      setCurrentTenant(mockTenant)
-      return { success: true, message: 'Tenant created successfully', tenantId: 'demo-tenant-1' }
+      const response = result.data as { success: boolean; message: string; data?: Tenant }
+      if (response.success && response.data) {
+        setCurrentTenant(response.data)
+        return { success: true, message: 'Tenant created successfully', tenantId: response.data.id }
+      } else {
+        return { success: false, message: response.message }
+      }
     } catch (error: any) {
       return { success: false, message: error.message }
     } finally {
@@ -99,27 +107,49 @@ export const TenantProvider: React.FC<TenantProviderProps> = ({ children }) => {
   }
 
   const createLink = async (linkData: CreateLinkData) => {
+    console.log('🔗 createLink called with:', linkData)
+    
     if (!currentTenant) {
+      console.log('❌ No current tenant found')
       return { success: false, message: 'Please create or select a tenant first' }
     }
+
+    console.log('✅ Current tenant:', currentTenant)
 
     try {
       setLoading(true)
       const createShortLink = httpsCallable(functions, 'createShortLink')
-      const result = await createShortLink({
+      
+      const requestData = {
+        url: linkData.originalUrl,
+        customAlias: linkData.customSlug,
         tenantId: currentTenant.id,
-        ...linkData
-      })
+        utmSource: linkData.utm?.source,
+        utmMedium: linkData.utm?.medium,
+        utmCampaign: linkData.utm?.campaign,
+        utmTerm: linkData.utm?.term,
+        utmContent: linkData.utm?.content
+      }
+      
+      console.log('📤 Sending to Firebase function:', requestData)
+      
+      const result = await createShortLink(requestData)
+      console.log('📥 Firebase function response:', result)
       
       const response = result.data as { success: boolean; message: string; data?: any }
+      console.log('📋 Parsed response:', response)
+      
       if (response.success && response.data) {
+        console.log('✅ Link created successfully, refreshing links...')
         // Refresh links after creating
         await refreshLinks()
         return { success: true, message: 'Link created successfully', link: response.data }
       } else {
+        console.log('❌ Link creation failed:', response.message)
         return { success: false, message: response.message }
       }
     } catch (error: any) {
+      console.error('💥 Error in createLink:', error)
       return { success: false, message: error.message }
     } finally {
       setLoading(false)
@@ -127,26 +157,43 @@ export const TenantProvider: React.FC<TenantProviderProps> = ({ children }) => {
   }
 
   const getLinks = async (filters: LinkFilters = {}) => {
+    console.log('🔍 getLinks called with filters:', filters)
+    
     if (!currentTenant) {
+      console.log('❌ No current tenant for getLinks')
       return { success: false, message: 'Please create or select a tenant first' }
     }
+
+    console.log('✅ Current tenant for getLinks:', currentTenant)
 
     try {
       setLoading(true)
       const getLinksFunction = httpsCallable(functions, 'getLinks')
-      const result = await getLinksFunction({
+      
+      const requestData = {
         tenantId: currentTenant.id,
         ...filters
-      })
+      }
       
-      const response = result.data as { success: boolean; message: string; data?: Link[] }
+      console.log('📤 Sending getLinks request:', requestData)
+      const result = await getLinksFunction(requestData)
+      console.log('📥 getLinks response:', result)
+      
+      const response = result.data as { success: boolean; message: string; data?: any }
+      console.log('📋 Parsed getLinks response:', response)
+      
       if (response.success && response.data) {
-        setLinks(response.data)
+        console.log('✅ Links retrieved successfully:', response.data)
+        console.log('🔍 First link data:', response.data.links?.[0])
+        console.log('🔍 First link createdAt:', response.data.links?.[0]?.metadata?.createdAt, 'type:', typeof response.data.links?.[0]?.metadata?.createdAt)
+        setLinks(response.data.links || response.data)
         return { success: true, message: 'Links retrieved successfully', links: response.data }
       } else {
+        console.log('❌ getLinks failed:', response.message)
         return { success: false, message: response.message }
       }
     } catch (error: any) {
+      console.error('💥 Error in getLinks:', error)
       return { success: false, message: error.message }
     } finally {
       setLoading(false)
@@ -154,7 +201,10 @@ export const TenantProvider: React.FC<TenantProviderProps> = ({ children }) => {
   }
 
   const refreshLinks = async () => {
-    await getLinks()
+    console.log('🔄 refreshLinks called')
+    const result = await getLinks()
+    console.log('🔄 refreshLinks result:', result)
+    // Don't return the result, just refresh the data
   }
 
   const value: TenantContextType = {

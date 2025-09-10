@@ -16,16 +16,22 @@
     "functions:build": "npm run build --workspace=functions",
     "shared:build": "npm run build --workspace=shared",
     "firebase:emulators": "firebase emulators:start",
-    "firebase:deploy": "firebase deploy",
+    "deploy": "npm run build && firebase deploy --only hosting",
     "install:all": "npm install && npm install --workspace=functions && npm install --workspace=shared",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
+    "@types/react-datepicker": "^6.2.0",
     "firebase": "^10.7.0",
     "lucide-react": "^0.543.0",
     "react": "^18.2.0",
+    "react-datepicker": "^8.7.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.20.0"
+    "react-router-dom": "^6.20.0",
+    "react-vega": "^8.0.0",
+    "vega": "^6.1.2",
+    "vega-embed": "^7.0.2",
+    "vega-lite": "^6.3.1"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.0.0-alpha.19",

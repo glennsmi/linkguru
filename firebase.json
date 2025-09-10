@@ -24,7 +24,7 @@
     ],
     "rewrites": [
       {
-        "source": "/r/:shortId",
+        "source": "/:shortId",
         "function": "redirect"
       },
       {
@@ -55,5 +55,8 @@
   "firestore": {
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
+  },
+  "storage": {
+    "rules": "storage.rules"
   }
 }
