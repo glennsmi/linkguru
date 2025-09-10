@@ -138,9 +138,9 @@ export default function Sidebar({ mode = 'desktop' }: { mode?: SidebarMode }) {
       <div className="border-t p-3 mt-auto border-slate-200 dark:border-slate-700">
 
         <div className="flex items-center justify-between gap-2 mt-2">
-          <button onClick={logout} className={`flex-1 flex items-center gap-2 text-xs group ${isDark ? 'text-slate-300 hover:text-white hover:bg-slate-800' : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100'} px-3 py-2 rounded-md transition-colors`}>
-              <User2 size={14} className={`${isDark ? 'text-white' : 'text-white'}`} />
-              <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'} truncate ${mode === 'desktop' && collapsed ? 'hidden' : ''}`}>{user?.displayName || user?.email}</span>
+          <button onClick={logout} className={`flex-1 flex items-center gap-2 text-xs group ${isDark ? 'text-slate-300 hover:text-white hover:bg-slate-800' : 'text-slate-700 hover:text-cyan-700 hover:bg-cyan-50'} px-3 py-2 rounded-md transition-colors`}>
+              <User2 size={14} className={`transition-colors ${isDark ? 'text-white group-hover:text-white' : 'text-slate-700 group-hover:text-cyan-700'}`} />
+              <span className={`text-sm font-medium transition-colors ${isDark ? 'text-white group-hover:text-white' : 'text-slate-800 group-hover:text-cyan-700'} truncate ${mode === 'desktop' && collapsed ? 'hidden' : ''}`}>{user?.displayName || user?.email}</span>
           </button>
         </div>
         <div className="flex items-center justify-between gap-2 mt-2">
